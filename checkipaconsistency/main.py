@@ -138,33 +138,33 @@ class Main(object):
         ])
 
     def _parse_args(self):
-        parser = argparse.ArgumentParser(description='Tool to check consistency across FreeIPA servers', add_help=False)
-        parser.add_argument('-H', '--hosts', nargs='*', dest='hosts', help='list of IPA servers')
-        parser.add_argument('-d', '--domain', nargs='?', dest='domain', help='IPA domain')
-        parser.add_argument('-D', '--binddn', nargs='?', dest='binddn', help='Bind DN (default: cn=Directory Manager)')
-        parser.add_argument('-W', '--bindpw', nargs='?', dest='bindpw', help='Bind password')
-        parser.add_argument('--help', action='help', help='show this help message and exit')
-        parser.add_argument('--version', action='version',
+        parser = argparse.ArgumentParser(description='Tool to check consistency across FreeIPA servers', add_help =False)
+        parser.add_argument('-H', '--hosts', nargs='*', dest='hosts', help ='list of IPA servers' )
+        parser.add_argument('-d', '--domain', nargs='?', dest='domain', help ='IPA domain')
+        parser.add_argument('-D', '--binddn', nargs='?', dest='binddn', help  ='Bind DN (default: cn=Directory Manager)')
+        parser.add_argument('-W', '--bindpw', nargs='?', dest='bindpw', help  ='Bind password')
+        parser.add_argument('--help ', action='help', help ='show this help   message and exit')
+        parser.add_argument('--vers ion', action='version' ,
                             version='%s %s' % (os.path.basename(sys.argv[0]), __version__))
-        parser.add_argument('--debug', action='store_true', dest='debug', help='debugging mode')
-        parser.add_argument('--verbose', action='store_true', dest='verbose', help='verbose mode')
-        parser.add_argument('--quiet', action='store_true', dest='quiet', help='do not log to console')
+        parser.add_argument('--debug', action='store_true', dest='debug', help ='debugging mode')
+        parser.add_argument('--verbose', action='store_true', dest='verbose',  help ='verbose mode')
+        parser.add_argument('--quiet', action='store_true', dest='quiet', help ='d o not log to console')
         parser.add_argument('-l', '--log-file', nargs='?', dest='log_file', default='not_set',
-                            help='log to file (./%s.log by default)' % self._app_name)
-        parser.add_argument('--no-header', action='store_true', dest='disable_header', help='disable table header')
-        parser.add_argument('--no-border', action='store_true', dest='disable_border', help='disable table border')
-        parser.add_argument('-n', nargs='?', dest='nagios_check', help='Nagios plugin mode', default='not_set',
-                            choices=['', 'all', 'users', 'susers', 'pusers', 'hosts', 'services', 'ugroups', 'hgroups',
+                            help ='log to file (./%s.log by default)' % self._app_name)
+        parser.add_argument('--n o-header', action='store_true', dest='disable_header', help ='disable table header')
+        parser.add_argument('--no-border', action='store_true', dest='disable_border', help  ='disable table border')
+        parser.add_argument('-n', nargs='?', dest='nagios_check', help ='Nagios plugin mode ', default='not_set',
+                            choices=['', 'all', 'users', 'susers', 'pu sers', 'hosts', 'services', 'ugroups', 'hgroups',
                                      'ngroups', 'hbac', 'sudo', 'zones', 'certs', 'conflicts', 'ghosts', 'bind',
                                      'msdcs', 'replicas'])
-        parser.add_argument('-p', nargs='?', dest='prometheus_check', help='Prometheus plugin mode', default='not_set',
-                            choices=['', 'all', 'users', 'susers', 'pusers', 'hosts', 'services', 'ugroups', 'hgroups',
+        parser.add_argument('-p', nargs='?', dest='prometheus_check', help ='Prometheus plugin mode', default='not_set',
+                            choices=['', 'all', 'users', 'susers', 'pusers ', 'hosts', 'services', 'ugroups', 'hgroups',
                                      'ngroups', 'hbac', 'sudo', 'zones', 'certs', 'conflicts', 'ghosts', 'bind',
                                      'msdcs', 'replicas'])
         parser.add_argument('-w', '--warning', type=int, dest='warning',
-                            default=1, help='number of failed checks before warning (default: %(default)s)')
-        parser.add_argument('-c', '--critical', type=int, dest='critical',
-                            default=2, help='number of failed checks before critical (default: %(default)s)')
+                            default=1, help ='number of failed checks before warning (default: %(default)s)')
+        parser.add_argument('-c', '--critic al', type=int, dest='critical',
+                            default=2, help ='number of failed checks before critical (default: %(default)s)') 
 
         args = parser.parse_args()
 
@@ -337,39 +337,41 @@ class Main(object):
             exit(code)
 
     def _prometheus_plugin(self, check):
-        self._log.debug('Running check: %s' % check)
         file = open("/var/lib/node_exporter/ipa.prom","w+")
         if check == 'all':
             for check in self._checks:
-                state = 'OK' if self._is_consistent(check, [getattr(server, check) for server in self._servers.values()])\
-                else 'FAIL'
+                prom_check_name = self._checks[check].replace(" ", "_").lower()
+                file.write( '# HELP ' + "ipa_" + prom_check_name + '\n')
+                file.write( '# TYPE ' + prom_check_name + ' gauge\n')
                 for server in self._servers.values():
                     if self._checks[check] == 'Replication Status':
                         replicas = str(getattr(server, check)).split()
                         for i in range(len(replicas[::2])):
-                            file.write( self._checks[check].replace(" ", "_")+ '{host="' + getattr(server, 'hostname_short') + ',replica=' + replicas[i] + '"} ' + replicas[i+1] + '\r\n')
+                            file.write("ipa_" + prom_check_name+ '{host="' + getattr(server, 'hostname_short') + '",replica="' + replicas[i] + '"} ' + replicas[i+1] + '\n')
                     elif self._checks[check] == 'Anonymous BIND':
                         output = '1' if str(getattr(server, check)) == 'ON' else '0'
-                        file.write( self._checks[check].replace(" ", "_")+ '{host="' + getattr(server, 'hostname_short') + '"} ' + output + '\r\n')
+                        file.write("ipa_" + prom_check_name+ '{host="' + getattr(server, 'hostname_short') + '"} ' + output + '\n')
                     elif self._checks[check] == 'Microsoft ADTrust':
                         output = '0' if str(getattr(server, check)) == 'False' else '1'
-                        file.write( self._checks[check].replace(" ", "_")+ '{host="' + getattr(server, 'hostname_short') + '"} ' + output + '\r\n')
+                        file.write("ipa_" + prom_check_name+ '{host="' + getattr(server, 'hostname_short') + '"} ' + output + '\n')
                     else:
-                        file.write( self._checks[check].replace(" ", "_")+ '{host="' + getattr(server, 'hostname_short') + '"} ' + str(getattr(server, check)) + '\r\n')  
+                        file.write("ipa_" + prom_check_name+ '{host="' + getattr(server, 'hostname_short') + '"} ' + str(getattr(server, check)) + '\n')  
         else:
+            file.write( '# HELP ' + "ipa_" + prom_check_name + '\n')
+            file.write( '# TYPE ' + prom_check_name + ' gauge\n')
             for server in self._servers.values():
                 if self._checks[check] == 'Replication Status':
                     replicas = str(getattr(server, check)).split()
                     for i in range(len(replicas[::2])):
-                        file.write( self._checks[check].replace(" ", "_")+ '{host="' + getattr(server, 'hostname_short') + ',replica=' + replicas[i] + '"} ' + replicas[i+1] + '\r\n')
+                        file.write("ipa_" + prom_check_name+ '{host="' + getattr(server, 'hostname_short') + '",replica="' + replicas[i] + '"} ' + replicas[i+1] + '\n')
                 elif self._checks[check] == 'Anonymous BIND':
                     output = '1' if str(getattr(server, check)) == 'ON' else '0'
-                    file.write( self._checks[check].replace(" ", "_")+ '{host="' + getattr(server, 'hostname_short') + '"} ' + output + '\r\n')
+                    file.write("ipa_" + prom_check_name+ '{host="' + getattr(server, 'hostname_short') + '"} ' + output + '\n')
                 elif self._checks[check] == 'Microsoft ADTrust':
                     output = '0' if str(getattr(server, check)) == 'False' else '1'
-                    file.write( self._checks[check].replace(" ", "_")+ '{host="' + getattr(server, 'hostname_short') + '"} ' + output + '\r\n')
+                    file.write("ipa_" + prom_check_name+ '{host="' + getattr(server, 'hostname_short') + '"} ' + output + '\n')
                 else:
-                    file.write( self._checks[check].replace(" ", "_")+ '{host="' + getattr(server, 'hostname_short') + '"} ' + str(getattr(server, check)) + '\r\n' )
+                    file.write("ipa_" + prom_check_name+ '{host="' + getattr(server, 'hostname_short') + '"} ' + str(getattr(server, check)) + '\n' )
         file.close()
 
 def main():
