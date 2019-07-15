@@ -157,6 +157,10 @@ class Main(object):
                             choices=['', 'all', 'users', 'susers', 'pusers', 'hosts', 'services', 'ugroups', 'hgroups',
                                      'ngroups', 'hbac', 'sudo', 'zones', 'certs', 'conflicts', 'ghosts', 'bind',
                                      'msdcs', 'replicas'])
+        parser.add_argument('-p', nargs='?', dest='prometheus_check', help='Prometheus plugin mode', default='not_set',
+                            choices=['', 'all', 'users', 'susers', 'pusers', 'hosts', 'services', 'ugroups', 'hgroups',
+                                     'ngroups', 'hbac', 'sudo', 'zones', 'certs', 'conflicts', 'ghosts', 'bind',
+                                     'msdcs', 'replicas'])
         parser.add_argument('-w', '--warning', type=int, dest='warning',
                             default=1, help='number of failed checks before warning (default: %(default)s)')
         parser.add_argument('-c', '--critical', type=int, dest='critical',
@@ -173,6 +177,11 @@ class Main(object):
             args.nagios_check = None
         elif not args.nagios_check:
             args.nagios_check = 'all'
+
+        if args.prometheus_check == 'not_set':
+            args.prometheus_check = None
+        elif not args.prometheus_check:
+            args.prometheus_check = 'all'
 
         self._args = args
 
@@ -243,6 +252,9 @@ class Main(object):
         if self._args.nagios_check:
             self._log.debug('Nagios plugin mode')
             self._nagios_plugin(self._args.nagios_check)
+        elif self._args.prometheus_check:
+            self._log.debug('Prometheus plugin mode')
+            self._prometheus_plugin(self._args.prometheus_check)
         else:
             self._log.debug('CLI mode')
             self._print_table()
@@ -324,6 +336,41 @@ class Main(object):
             self._log.info('%s - %s' % (msg, self._checks[check]))
             exit(code)
 
+    def _prometheus_plugin(self, check):
+        self._log.debug('Running check: %s' % check)
+        file = open("/var/lib/node_exporter/ipa.prom","w+")
+        if check == 'all':
+            for check in self._checks:
+                state = 'OK' if self._is_consistent(check, [getattr(server, check) for server in self._servers.values()])\
+                else 'FAIL'
+                for server in self._servers.values():
+                    if self._checks[check] == 'Replication Status':
+                        replicas = str(getattr(server, check)).split()
+                        for i in range(len(replicas[::2])):
+                            file.write( self._checks[check].replace(" ", "_")+ '{host="' + getattr(server, 'hostname_short') + ',replica=' + replicas[i] + '}" ' + replicas[i+1] + '\r\n')
+                    elif self._checks[check] == 'Anonymous BIND':
+                        output = '1' if str(getattr(server, check)) == 'ON' else '0'
+                        file.write( self._checks[check].replace(" ", "_")+ '{host="' + getattr(server, 'hostname_short') + '}" ' + output + '\r\n')
+                    elif self._checks[check] == 'Microsoft ADTrust':
+                        output = '0' if str(getattr(server, check)) == 'False' else '1'
+                        file.write( self._checks[check].replace(" ", "_")+ '{host="' + getattr(server, 'hostname_short') + '}" ' + output + '\r\n')
+                    else:
+                        file.write( self._checks[check].replace(" ", "_")+ '{host="' + getattr(server, 'hostname_short') + '}" ' + str(getattr(server, check)) + '\r\n')  
+        else:
+            for server in self._servers.values():
+                if self._checks[check] == 'Replication Status':
+                    replicas = str(getattr(server, check)).split()
+                    for i in range(len(replicas[::2])):
+                        file.write( self._checks[check].replace(" ", "_")+ '{host="' + getattr(server, 'hostname_short') + ',replica=' + replicas[i] + '}" ' + replicas[i+1] + '\r\n')
+                elif self._checks[check] == 'Anonymous BIND':
+                    output = '1' if str(getattr(server, check)) == 'ON' else '0'
+                    file.write( self._checks[check].replace(" ", "_")+ '{host="' + getattr(server, 'hostname_short') + '}" ' + output + '\r\n')
+                elif self._checks[check] == 'Microsoft ADTrust':
+                    output = '0' if str(getattr(server, check)) == 'False' else '1'
+                    file.write( self._checks[check].replace(" ", "_")+ '{host="' + getattr(server, 'hostname_short') + '}" ' + output + '\r\n')
+                else:
+                    file.write( self._checks[check].replace(" ", "_")+ '{host="' + getattr(server, 'hostname_short') + '}" ' + str(getattr(server, check)) + '\r\n' )
+        file.close()
 
 def main():
     try:
