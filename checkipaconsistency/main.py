@@ -347,29 +347,29 @@ class Main(object):
                     if self._checks[check] == 'Replication Status':
                         replicas = str(getattr(server, check)).split()
                         for i in range(len(replicas[::2])):
-                            file.write( self._checks[check].replace(" ", "_")+ '{host="' + getattr(server, 'hostname_short') + ',replica=' + replicas[i] + '}" ' + replicas[i+1] + '\r\n')
+                            file.write( self._checks[check].replace(" ", "_")+ '{host="' + getattr(server, 'hostname_short') + ',replica=' + replicas[i] + '"} ' + replicas[i+1] + '\r\n')
                     elif self._checks[check] == 'Anonymous BIND':
                         output = '1' if str(getattr(server, check)) == 'ON' else '0'
-                        file.write( self._checks[check].replace(" ", "_")+ '{host="' + getattr(server, 'hostname_short') + '}" ' + output + '\r\n')
+                        file.write( self._checks[check].replace(" ", "_")+ '{host="' + getattr(server, 'hostname_short') + '"} ' + output + '\r\n')
                     elif self._checks[check] == 'Microsoft ADTrust':
                         output = '0' if str(getattr(server, check)) == 'False' else '1'
-                        file.write( self._checks[check].replace(" ", "_")+ '{host="' + getattr(server, 'hostname_short') + '}" ' + output + '\r\n')
+                        file.write( self._checks[check].replace(" ", "_")+ '{host="' + getattr(server, 'hostname_short') + '"} ' + output + '\r\n')
                     else:
-                        file.write( self._checks[check].replace(" ", "_")+ '{host="' + getattr(server, 'hostname_short') + '}" ' + str(getattr(server, check)) + '\r\n')  
+                        file.write( self._checks[check].replace(" ", "_")+ '{host="' + getattr(server, 'hostname_short') + '"} ' + str(getattr(server, check)) + '\r\n')  
         else:
             for server in self._servers.values():
                 if self._checks[check] == 'Replication Status':
                     replicas = str(getattr(server, check)).split()
                     for i in range(len(replicas[::2])):
-                        file.write( self._checks[check].replace(" ", "_")+ '{host="' + getattr(server, 'hostname_short') + ',replica=' + replicas[i] + '}" ' + replicas[i+1] + '\r\n')
+                        file.write( self._checks[check].replace(" ", "_")+ '{host="' + getattr(server, 'hostname_short') + ',replica=' + replicas[i] + '"} ' + replicas[i+1] + '\r\n')
                 elif self._checks[check] == 'Anonymous BIND':
                     output = '1' if str(getattr(server, check)) == 'ON' else '0'
-                    file.write( self._checks[check].replace(" ", "_")+ '{host="' + getattr(server, 'hostname_short') + '}" ' + output + '\r\n')
+                    file.write( self._checks[check].replace(" ", "_")+ '{host="' + getattr(server, 'hostname_short') + '"} ' + output + '\r\n')
                 elif self._checks[check] == 'Microsoft ADTrust':
                     output = '0' if str(getattr(server, check)) == 'False' else '1'
-                    file.write( self._checks[check].replace(" ", "_")+ '{host="' + getattr(server, 'hostname_short') + '}" ' + output + '\r\n')
+                    file.write( self._checks[check].replace(" ", "_")+ '{host="' + getattr(server, 'hostname_short') + '"} ' + output + '\r\n')
                 else:
-                    file.write( self._checks[check].replace(" ", "_")+ '{host="' + getattr(server, 'hostname_short') + '}" ' + str(getattr(server, check)) + '\r\n' )
+                    file.write( self._checks[check].replace(" ", "_")+ '{host="' + getattr(server, 'hostname_short') + '"} ' + str(getattr(server, check)) + '\r\n' )
         file.close()
 
 def main():
