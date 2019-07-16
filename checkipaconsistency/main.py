@@ -60,6 +60,8 @@ class Main(object):
         self._binddn = 'cn=Directory Manager'
         self._bindpw = None
 
+        self._textfile_collector_folder = '/var/lib/node_exporter/'
+
         self._load_config()
 
         if self._args.domain:
@@ -205,6 +207,8 @@ class Main(object):
             config.set('IPA', 'HOSTS', 'ipa01, ipa02, ipa03, ipa04, ipa05, ipa06')
             config.set('IPA', 'BINDDN', 'cn=Directory Manager')
             config.set('IPA', 'BINDPW', 'example123')
+            config.add_section('PROMETHEUS')
+            config.set('PROMETHEUS', 'TEXTFILE_COLLECTOR_FOLDER', '/var/lib/node_exporter/')
             with open(config_file, 'w') as cfgfile:
                 config.write(cfgfile)
             self._log.info('Initial config saved to %s - PLEASE EDIT IT!' % config_file)
@@ -246,6 +250,12 @@ class Main(object):
             self._log.debug('BINDPW = ********')
         else:
             self._log.debug('IPA.BINDPW not set')
+
+        if config.has_option('PROMETHEUS', 'TEXTFILE_COLLECTOR_FOLDER'):
+            self._textfile_collector_folder = config.get('PROMETHEUS', 'TEXTFILE_COLLECTOR_FOLDER')
+            self._log.debug('TEXTFILE_COLLECTOR_FOLDER = %s' % self._textfile_collector_folder)
+        else:
+            self._log.debug('PROMETHEUS.TEXTFILE_COLLECTOR_FOLDER not set')
 
     def run(self):
         self._log.debug('Starting...')
@@ -337,7 +347,7 @@ class Main(object):
             exit(code)
 
     def _prometheus_plugin(self, check):
-        file = open("/var/lib/node_exporter/ipa.prom","w+")
+        file = open( self._textfile_collector_folder + "ipa.prom","w+")
         if check == 'all':
             for check in self._checks:
                 prom_check_name = self._checks[check].replace(" ", "_").lower()

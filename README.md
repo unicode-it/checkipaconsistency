@@ -166,6 +166,19 @@ Perform specific check with custom alerting thresholds:
 $ /usr/local/nagios/libexec/check_ipa_consistency -n users -w 2 -c3
 OK - Active Users
 ```
+## Prometheus plug-in mode
+The tool can be used to generate a Prometheus compatible textfile ipa.prom, to collect with the node_extractor:
+The default folder for the node_extractor is /var/lib/node_extractor/ change it in the config file if needed
+
+Perform all checks :
+```
+$ cipa -p 
+```
+
+Perform specific check and write out textfile ipa.prom:
+```
+$ cipa -p users
+```
 
 ### LDAP Conflicts
 Normally conflicting changes between replicas are resolved automatically (the
